@@ -21,5 +21,10 @@ An AI-powered project management assistant built on Cloudflare's edge network. I
    ```
 3. Run in development mode:
    ```bash
-   npx wrangler dev
+   npm run dev
    ```
+
+### Notes
+- The default development command runs in local mode so it works without a workers.dev subdomain.
+- Workers AI is configured as a remote binding, and the agent falls back to a local response if AI is unavailable during local development.
+- The chat UI is available at the worker root and sends messages to `/api/chat`.

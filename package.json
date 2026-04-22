@@ -4,7 +4,7 @@
   "description": "An AI-powered project management assistant built on Cloudflare's edge network. It leverages autonomous agents to decompose complex goals into executable tasks using Workflows.",
   "main": "index.js",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --local",
     "deploy": "wrangler deploy",
     "typegen": "wrangler types"
   },
@@ -23,5 +23,8 @@
     "@cloudflare/workers-types": "^4.20260422.1",
     "typescript": "^6.0.3",
     "wrangler": "^4.84.1"
+  },
+  "dependencies": {
+    "@cloudflare/agents": "^0.0.16"
   }
 }

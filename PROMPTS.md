@@ -50,3 +50,27 @@ After that, provide the boilerplate for a `ProjectAgent` class using the `cloudf
 
 **Prompt:** 
 "Provide a standard `.gitignore` file for this project. Prevent tracking local environment state, sensitive credentials, and heavy dependency folders."
+
+## Prompt 6: Agent Routing Alignment
+**Assistant:** Gemini 2.0
+
+**Context:** Align agent routing with the Cloudflare Agents SDK.
+
+**Prompt:**
+"The base agent and worker router are in place. I already have a `ProjectAgent` durable object and a Worker router for `/api/chat`. Help me update the routing so the worker uses the Cloudflare Agents SDK helper for named agent instances, preserves conversation state per agent, and keeps the request path compatible with local development."
+
+## Prompt 7: Local Development Fallback
+**Assistant:** Gemini 2.0
+
+**Context:** Keep local development usable without remote AI access.
+
+**Prompt:**
+"The project is wired to Workers AI, but local development may not always have remote AI access enabled. My agent already calls Llama 3.3 on Workers AI and stores message history. Suggest a clean fallback strategy for local development so the chat still returns a useful response when the AI binding is unavailable, without changing the production flow."
+
+## Prompt 8: Minimal Chat UI for the Worker
+**Assistant:** Gemini 2.0
+
+**Context:** Add a simple browser UI to test the worker end-to-end.
+
+**Prompt:**
+"The worker now serves static assets, and I want a simple browser UI that can exercise the chat endpoint end-to-end. Given a Cloudflare Worker that exposes `/api/chat`, generate a lightweight chat interface with HTML, CSS, and vanilla JavaScript that posts user messages to the endpoint, renders the conversation, and works well in local development."

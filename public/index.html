@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Project Copilot</title>
+		<style>
+			:root {
+				color-scheme: dark;
+				--bg: #0b1020;
+				--panel: rgba(15, 23, 42, 0.82);
+				--panel-border: rgba(148, 163, 184, 0.18);
+				--text: #e2e8f0;
+				--muted: #94a3b8;
+				--accent: #60a5fa;
+				--accent-2: #a78bfa;
+				--user: #1d4ed8;
+				--assistant: rgba(148, 163, 184, 0.12);
+				--shadow: 0 24px 80px rgba(15, 23, 42, 0.45);
+			}
+
+			* { box-sizing: border-box; }
+
+			body {
+				margin: 0;
+				min-height: 100vh;
+				font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+				color: var(--text);
+				background:
+					radial-gradient(circle at top left, rgba(96, 165, 250, 0.22), transparent 30%),
+					radial-gradient(circle at top right, rgba(167, 139, 250, 0.18), transparent 28%),
+					linear-gradient(180deg, #050816 0%, var(--bg) 100%);
+				display: grid;
+				place-items: center;
+				padding: 24px;
+			}
+
+			.shell {
+				width: min(100%, 980px);
+				height: min(92vh, 900px);
+				display: grid;
+				grid-template-rows: auto 1fr auto;
+				gap: 16px;
+				padding: 20px;
+				border: 1px solid var(--panel-border);
+				border-radius: 28px;
+				background: var(--panel);
+				backdrop-filter: blur(18px);
+				box-shadow: var(--shadow);
+			}
+
+			header {
+				display: flex;
+				justify-content: space-between;
+				gap: 16px;
+				align-items: flex-start;
+			}
+
+			h1 {
+				margin: 0 0 8px;
+				font-size: clamp(1.4rem, 2.8vw, 2.3rem);
+				letter-spacing: -0.03em;
+			}
+
+			.subtitle {
+				margin: 0;
+				color: var(--muted);
+				line-height: 1.5;
+				max-width: 62ch;
+			}
+
+			.badge {
+				padding: 10px 14px;
+				border-radius: 999px;
+				border: 1px solid rgba(96, 165, 250, 0.28);
+				background: rgba(96, 165, 250, 0.12);
+				color: #bfdbfe;
+				font-size: 0.9rem;
+				white-space: nowrap;
+			}
+
+			#messages {
+				overflow: auto;
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+				padding: 4px 4px 8px;
+			}
+
+			.message {
+				max-width: min(76ch, 92%);
+				padding: 14px 16px;
+				border-radius: 18px;
+				line-height: 1.55;
+				white-space: pre-wrap;
+				word-wrap: break-word;
+				border: 1px solid transparent;
+			}
+
+			.message.user {
+				margin-left: auto;
+				background: linear-gradient(135deg, rgba(29, 78, 216, 0.95), rgba(59, 130, 246, 0.88));
+				border-color: rgba(255, 255, 255, 0.08);
+			}
+
+			.message.assistant {
+				background: var(--assistant);
+				border-color: var(--panel-border);
+			}
+
+			.composer {
+				display: grid;
+				grid-template-columns: 1fr auto;
+				gap: 12px;
+				padding: 12px;
+				border-radius: 22px;
+				border: 1px solid var(--panel-border);
+				background: rgba(2, 6, 23, 0.5);
+			}
+
+			textarea {
+				width: 100%;
+				resize: none;
+				min-height: 64px;
+				max-height: 180px;
+				border: 0;
+				outline: 0;
+				color: var(--text);
+				background: transparent;
+				font: inherit;
+				line-height: 1.5;
+				padding: 12px 14px;
+			}
+
+			textarea::placeholder {
+				color: #64748b;
+			}
+
+			button {
+				align-self: end;
+				border: 0;
+				border-radius: 16px;
+				padding: 14px 20px;
+				color: white;
+				font-weight: 600;
+				background: linear-gradient(135deg, var(--accent), var(--accent-2));
+				cursor: pointer;
+				transition: transform 0.15s ease, opacity 0.15s ease;
+			}
+
+			button:hover { transform: translateY(-1px); }
+			button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+			.hint {
+				margin: 0;
+				color: var(--muted);
+				font-size: 0.92rem;
+				text-align: center;
+			}
+
+			@media (max-width: 720px) {
+				.shell { height: 100vh; border-radius: 0; }
+				header { flex-direction: column; }
+				.composer { grid-template-columns: 1fr; }
+				button { width: 100%; }
+			}
+		</style>
+	</head>
+	<body>
+		<main class="shell">
+			<header>
+				<div>
+					<h1>Project Copilot</h1>
+					<p class="subtitle">
+						A Cloudflare AI assistant with stateful memory, workflow coordination, and a live chat interface.
+					</p>
+				</div>
+				<div class="badge">Workers AI + Durable Object memory</div>
+			</header>
+
+			<section id="messages" aria-live="polite" aria-label="Chat messages"></section>
+
+			<form class="composer" id="chat-form">
+				<textarea id="message-input" placeholder="Ask the project copilot something..." rows="2"></textarea>
+				<button id="send-button" type="submit">Send</button>
+			</form>
+
+			<p class="hint">Press Enter to send, Shift+Enter for a new line.</p>
+		</main>
+
+		<script src="/app.js" defer></script>
+	</body>
+	</html>

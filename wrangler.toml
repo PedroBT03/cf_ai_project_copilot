@@ -6,6 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 # 1. AI Binding: Allows access to Llama 3.3
 [ai]
 binding = "AI"
+remote = true
 
 # 2. Durable Objects: Used by the Agents SDK for state/memory
 [[durable_objects.bindings]]
@@ -14,7 +15,7 @@ class_name = "ProjectAgent"
 
 [[migrations]]
 tag = "v1"
-new_classes = ["ProjectAgent"]
+new_sqlite_classes = ["ProjectAgent"]
 
 # 3. Workflows: For long-running project planning tasks
 [[workflows]]
