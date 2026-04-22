@@ -1,0 +1,27 @@
+{
+  "name": "cf_ai_project_copilot",
+  "version": "1.0.0",
+  "description": "An AI-powered project management assistant built on Cloudflare's edge network. It leverages autonomous agents to decompose complex goals into executable tasks using Workflows.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typegen": "wrangler types"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PedroBT03/cf_ai_project_copilot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PedroBT03/cf_ai_project_copilot/issues"
+  },
+  "homepage": "https://github.com/PedroBT03/cf_ai_project_copilot#readme",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260422.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.84.1"
+  }
+}

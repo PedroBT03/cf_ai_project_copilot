@@ -1,0 +1,34 @@
+name = "cf_ai_project_copilot"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# 1. AI Binding: Allows access to Llama 3.3
+[ai]
+binding = "AI"
+
+# 2. Durable Objects: Used by the Agents SDK for state/memory
+[[durable_objects.bindings]]
+name = "AGENT_STATE"
+class_name = "ProjectAgent"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ProjectAgent"]
+
+# 3. Workflows: For long-running project planning tasks
+[[workflows]]
+binding = "PROJECT_WORKFLOW"
+name = "project-workflow"
+class_name = "ProjectWorkflow"
+
+# 4. D1 Database: Persistent storage for projects and tasks
+[[d1_databases]]
+binding = "DB"
+database_name = "project_copilot_db"
+database_id = "04100339-d0d4-47eb-8edb-2c835a5c9e86"
+
+# 5. Static Assets: Serve the frontend from the /public folder
+[assets]
+directory = "./public"
+binding = "ASSETS"
