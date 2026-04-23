@@ -2,6 +2,8 @@ import { Agent, Connection, WSMessage } from "@cloudflare/agents";
 import { ensureDbSchema } from "./db";
 import { ChatMessage, ProjectWorkflowParams } from "./types";
 
+const AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+
 // Environment interface
 export interface Env {
   AI: Ai;
@@ -113,17 +115,27 @@ export class ProjectAgent extends Agent<Env> {
     let history = (await this.ctx.storage.get<ChatMessage[]>("history")) || [];
     history.push({ role: "user", content: userText });
 
-    // 2. Call Llama 3.3, with a local fallback when Workers AI is unavailable
+    // 2. Call AI model, with a local fallback when Workers AI is unavailable
     let aiText = "";
     try {
-      const response = await this.env.AI.run("@cf/meta/llama-3.3-70b-instruct", {
-        messages: [
-          { role: "system", content: "You are a professional Project Manager assistant." },
-          ...history
-        ]
-      });
+      let lastError: unknown = null;
+      try {
+        const response = await this.env.AI.run(AI_MODEL, {
+          messages: [
+            { role: "system", content: "You are a professional Project Manager assistant." },
+            ...history
+          ]
+        });
 
-      aiText = (response as any).response ?? String(response);
+        aiText = (response as any).response ?? String(response);
+      } catch (error) {
+        lastError = error;
+        console.warn(`Model ${AI_MODEL} unavailable.`, error);
+      }
+
+      if (!aiText) {
+        throw lastError ?? new Error("Workers AI returned an empty response");
+      }
     } catch (error) {
       console.warn("Workers AI is unavailable, using local fallback response.", error);
       aiText = `Local fallback mode: I received your message: ${userText}`;

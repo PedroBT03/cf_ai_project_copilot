@@ -7,33 +7,108 @@ type Env = {
   DB: D1Database;
 };
 
-function fallbackTasks(goal: string): string[] {
+const AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+
+type PlannedTask = {
+  title: string;
+  details: string;
+};
+
+function stripCodeFences(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("```") || !trimmed.endsWith("```")) {
+    return text;
+  }
+
+  return trimmed
+    .replace(/^```[a-zA-Z0-9_-]*\n?/, "")
+    .replace(/```$/, "")
+    .trim();
+}
+
+function normalizeParsedTasks(parsed: unknown): PlannedTask[] {
+  const unwrap = (value: unknown): unknown[] | null => {
+    if (Array.isArray(value)) return value;
+    if (!value || typeof value !== "object") return null;
+
+    const asObject = value as Record<string, unknown>;
+    for (const key of ["tasks", "items", "plan", "steps"]) {
+      if (Array.isArray(asObject[key])) {
+        return asObject[key] as unknown[];
+      }
+    }
+    return null;
+  };
+
+  const entries = unwrap(parsed);
+  if (!entries) return [];
+
+  return entries
+    .map((item) => {
+      if (typeof item === "string") {
+        const title = item.trim();
+        if (!title) return null;
+        return { title, details: "" };
+      }
+
+      if (item && typeof item === "object") {
+        const row = item as Record<string, unknown>;
+        const title = typeof row.title === "string" ? row.title.trim() : "";
+        const details = typeof row.details === "string" ? row.details.trim() : "";
+        if (!title) return null;
+        return { title, details };
+      }
+
+      return null;
+    })
+    .filter((item): item is PlannedTask => Boolean(item))
+    .slice(0, 8);
+}
+
+function fallbackTasks(goal: string): PlannedTask[] {
   return [
-    `Define scope and success criteria for: ${goal}`,
-    "Create a milestone timeline with owners",
-    "List dependencies, risks, and mitigation actions",
-    "Prepare an execution checklist and kickoff plan"
+    {
+      title: `Define scope and success criteria for: ${goal}`,
+      details: "Clarify goals, measurable outcomes, and delivery constraints."
+    },
+    {
+      title: "Create a milestone timeline with owners",
+      details: "Assign accountability and due dates for each milestone."
+    },
+    {
+      title: "List dependencies, risks, and mitigation actions",
+      details: "Document blocking dependencies and define mitigation plans."
+    },
+    {
+      title: "Prepare an execution checklist and kickoff plan",
+      details: "Create kickoff agenda, communication cadence, and first sprint checklist."
+    }
   ];
 }
 
-function parseTaskList(raw: string, goal: string): string[] {
+function parseTaskList(raw: string, goal: string): PlannedTask[] {
+  const cleaned = stripCodeFences(raw);
+
   try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) {
-      const items = parsed
-        .map((item) => (typeof item === "string" ? item.trim() : ""))
-        .filter(Boolean)
-        .slice(0, 8);
-      if (items.length > 0) return items;
-    }
+    const parsed = JSON.parse(cleaned);
+    const items = normalizeParsedTasks(parsed);
+    if (items.length > 0) return items;
   } catch {
     // Falls back to line parsing below when model doesn't return valid JSON.
   }
 
-  const fromLines = raw
+  const fromLines = cleaned
     .split("\n")
     .map((line) => line.replace(/^\s*[-*0-9.)\s]+/, "").trim())
-    .filter(Boolean)
+    .filter((line) => {
+      if (!line) return false;
+      if (/^```/.test(line)) return false;
+      if (/^[\[\]{}]+$/.test(line)) return false;
+      if (/^"?[a-zA-Z0-9_]+"?\s*:\s*$/.test(line)) return false;
+      if (line.toLowerCase() === "json") return false;
+      return true;
+    })
+    .map((title) => ({ title, details: "" }))
     .slice(0, 8);
 
   return fromLines.length > 0 ? fromLines : fallbackTasks(goal);
@@ -41,12 +116,12 @@ function parseTaskList(raw: string, goal: string): string[] {
 
 async function runAiSafe(env: Env, messages: { role: string; content: string }[]): Promise<string> {
   try {
-    const response = await env.AI.run("@cf/meta/llama-3.3-70b-instruct", {
+    const response = await env.AI.run(AI_MODEL, {
       messages
     });
     return (response as any).response ?? "";
   } catch (error) {
-    console.warn("Workflow AI unavailable; using fallback content.", error);
+    console.warn(`Workflow model ${AI_MODEL} unavailable; using fallback content.`, error);
     return "";
   }
 }
@@ -76,11 +151,11 @@ export class ProjectWorkflow extends WorkflowEntrypoint<Env, ProjectWorkflowPara
         {
           role: "system",
           content:
-            "You are a project planning analyst. Produce a concise 2-4 sentence plan analysis."
+            "You are a senior delivery manager. Produce a concise, actionable project analysis in 4 bullet points: objective, execution path, major risk, and immediate next action."
         },
         {
           role: "user",
-          content: `Analyze this project goal and highlight execution priorities: ${goal}`
+          content: `Project goal: ${goal}\nReturn only the 4 bullet points requested.`
         }
       ]);
 
@@ -102,11 +177,13 @@ export class ProjectWorkflow extends WorkflowEntrypoint<Env, ProjectWorkflowPara
         {
           role: "system",
           content:
-            "Return ONLY a JSON array of task strings. Max 8 tasks. Prioritize practical execution order."
+            "Return ONLY valid JSON. Output an array (max 8 items). Each item must be an object with: title (string), details (string). Prioritize execution order."
         },
         {
           role: "user",
-          content: `Create a task breakdown for this goal: ${goal}`
+          content:
+            `Create an execution task breakdown for this goal: ${goal}. ` +
+            "Tasks should be concrete, owner-ready, and sequenced from planning to delivery."
         }
       ]);
 
@@ -121,8 +198,15 @@ export class ProjectWorkflow extends WorkflowEntrypoint<Env, ProjectWorkflowPara
          VALUES (?, ?, ?, ?, ?, ?)`
       );
 
-      const batchStatements = tasks.map((title, index) =>
-        insertTask.bind(crypto.randomUUID(), projectId, title, "pending", index, null)
+      const batchStatements = tasks.map((task, index) =>
+        insertTask.bind(
+          crypto.randomUUID(),
+          projectId,
+          task.title,
+          "pending",
+          index,
+          task.details
+        )
       );
 
       if (batchStatements.length > 0) {

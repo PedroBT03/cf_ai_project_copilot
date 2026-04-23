@@ -81,7 +81,7 @@ My approach focused on using AI for architectural framework, Cloudflare-specific
 **Context:** Extend persistence to support workflow visibility and task dashboards.
 
 **Prompt:**
-"My project already stores basic project/task data in D1. Suggest a minimal schema extension to track workflow execution (`workflow_instance_id`, workflow event logs, task ordering) so I can expose progress in the UI and query project status cleanly."
+"I already have basic project and task tables in D1. What small changes should I add so I can track workflow progress and show it in the UI?"
 
 ## Prompt 11: Agent Trigger for Planning Mode
 **Assistant:** Gemini 2.0
@@ -89,7 +89,7 @@ My approach focused on using AI for architectural framework, Cloudflare-specific
 **Context:** Add command-based workflow triggering without breaking normal chat mode.
 
 **Prompt:**
-"I already have an agent that responds to chat messages. Help me add a planning command flow (e.g., `/plan <goal>`) that creates a project, triggers a Workflow instance, returns `projectId/workflowId`, and keeps normal conversational replies for non-command messages."
+"My agent already replies in chat. Help me add a `/plan` command that starts a workflow and returns IDs I can use in the frontend, while keeping normal chat messages unchanged."
 
 ## Prompt 12: Status API Shape
 **Assistant:** Gemini 2.0
@@ -97,7 +97,7 @@ My approach focused on using AI for architectural framework, Cloudflare-specific
 **Context:** Expose project progress through a single endpoint for the frontend.
 
 **Prompt:**
-"I already have project, task, and workflow data persisted. Help me define a clean response contract for `GET /api/project/:id/status` that returns project metadata, workflow runtime status, ordered tasks, and recent workflow events."
+"I already persist project, task, and workflow info. Can you suggest a clean JSON response for a status endpoint so the frontend can render everything from one request?"
 
 ## Prompt 13: Frontend Polling Dashboard
 **Assistant:** Gemini 2.0
@@ -113,4 +113,44 @@ My approach focused on using AI for architectural framework, Cloudflare-specific
 **Context:** Keep workflow execution stable in local dev when Workers AI is unavailable.
 
 **Prompt:**
-"My workflow already calls Workers AI, but local execution may fail when AI bindings are not remotely available. Propose a fallback approach so workflow steps still complete locally (with deterministic fallback content) while keeping production behavior unchanged."
+"My workflow uses Workers AI, but in local mode it can fail. Suggest a fallback so the workflow still finishes locally with basic output, without changing production behavior."
+
+## Prompt 15: Task Status Update Endpoint
+**Assistant:** Gemini 2.0
+
+**Context:** Add manual task state transitions for execution tracking.
+
+**Prompt:**
+"I already list tasks in the status endpoint. Help me add a simple endpoint to change a task state (`pending`, `in_progress`, `done`) and log that change."
+
+## Prompt 16: Frontend Task Controls
+**Assistant:** Gemini 2.0
+
+**Context:** Allow task status updates directly from the dashboard UI.
+
+**Prompt:**
+"My dashboard already renders tasks. Suggest a simple UI pattern to let me update each task status inline and refresh the panel after changes."
+
+## Prompt 17: SSE Status Stream
+**Assistant:** Gemini 2.0
+
+**Context:** Improve project status updates with near-real-time streaming.
+
+**Prompt:**
+"I already have polling working for project status. Help me add an Server-Sent Events stream and connect it in the frontend, but keep polling as a backup if streaming disconnects."
+
+## Prompt 18: Task JSON Formatting Fix
+**Assistant:** Gemini 2.0
+
+**Context:** Fix malformed task rendering caused by inconsistent AI JSON output.
+
+**Prompt:**
+"I'm getting messy task output in the planning board: sometimes `title` and `details` show up as separate bullets, and sometimes I get raw JSON bits like `\"title\": ...`, braces, or code fences. Can you help me clean this up with a JSON-first parse and a simple regex/string fallback? I want one bullet per task title, with details shown separately (like a tooltip). Also explain why this is happening and the safest fix."
+
+## Prompt 19: README Writing Review
+**Assistant:** Gemini 2.0
+
+**Context:** Improve README clarity and polish for submission.
+
+**Prompt:**
+"I already have a complete README with setup instructions, architecture, demo flow, and API endpoints. Please review the writing quality and suggest edits to improve clarity, structure, and consistency without changing the technical meaning."

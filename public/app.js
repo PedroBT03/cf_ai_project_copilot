@@ -6,6 +6,42 @@ const projectStatusEl = document.getElementById("project-status");
 
 let activeProjectId = null;
 let statusTimer = null;
+let statusSource = null;
+
+const escapeHtml = (value) =>
+	String(value)
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/\"/g, "&quot;")
+		.replace(/'/g, "&#39;");
+
+const parseInlineField = (text) => {
+	const match = String(text)
+		.trim()
+		.match(/^\"?([a-zA-Z_][a-zA-Z0-9_]*)\"?\s*:\s*\"(.+?)\"\s*,?$/);
+	if (!match) return null;
+	return { key: match[1].toLowerCase(), value: match[2].trim() };
+};
+
+const cleanTaskTitle = (rawTitle) => {
+	const field = parseInlineField(rawTitle);
+	if (field?.key === "title") return field.value;
+
+	const cleaned = String(rawTitle)
+		.replace(/[{}\[\],]/g, "")
+		.replace(/^\"?title\"?\s*:\s*/i, "")
+		.replace(/^\"|\"$/g, "")
+		.trim();
+
+	return cleaned;
+};
+
+const shouldHideTaskRow = (rawTitle) => {
+	const field = parseInlineField(rawTitle);
+	if (!field) return false;
+	return field.key === "details";
+};
 
 const appendMessage = (role, content) => {
 	const el = document.createElement("div");
@@ -31,7 +67,28 @@ const renderStatus = (payload) => {
 
 	const tasksHtml = tasks.length
 		? tasks
-				.map((task) => `<li><strong>${task.title}</strong> <span>(${task.status})</span></li>`)
+				.filter((task) => !shouldHideTaskRow(task.title))
+				.map(
+					(task) =>
+						{
+							const title = cleanTaskTitle(task.title);
+							const details = String(task.details || "").trim();
+							const titleAttr = details ? ` title="${escapeHtml(details)}"` : "";
+
+							return `<li>
+								<div class="task-row">
+									<div>
+										<strong${titleAttr}>${escapeHtml(title)}</strong>
+									</div>
+									<select class="task-status" data-task-id="${task.id}">
+										<option value="pending" ${task.status === "pending" ? "selected" : ""}>pending</option>
+										<option value="in_progress" ${task.status === "in_progress" ? "selected" : ""}>in_progress</option>
+										<option value="done" ${task.status === "done" ? "selected" : ""}>done</option>
+									</select>
+								</div>
+							</li>`;
+						}
+				)
 				.join("")
 		: "<li>No tasks yet.</li>";
 
@@ -57,6 +114,26 @@ const renderStatus = (payload) => {
 			<ul>${eventsHtml}</ul>
 		</div>
 	`;
+
+	for (const selectEl of projectStatusEl.querySelectorAll(".task-status")) {
+		selectEl.addEventListener("change", async (event) => {
+			const target = event.currentTarget;
+			if (!(target instanceof HTMLSelectElement)) return;
+			const taskId = target.dataset.taskId;
+			if (!taskId) return;
+
+			try {
+				await fetch(`/api/task/${taskId}`, {
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ status: target.value })
+				});
+				await fetchStatus();
+			} catch {
+				appendMessage("assistant", "Failed to update task status.");
+			}
+		});
+	}
 };
 
 const fetchStatus = async () => {
@@ -75,6 +152,36 @@ const startStatusPolling = () => {
 	if (statusTimer) clearInterval(statusTimer);
 	fetchStatus();
 	statusTimer = setInterval(fetchStatus, 3000);
+};
+
+const startStatusStream = () => {
+	if (!activeProjectId) return;
+	if (statusSource) {
+		statusSource.close();
+		statusSource = null;
+	}
+
+	try {
+		statusSource = new EventSource(`/api/project/${activeProjectId}/stream`);
+		statusSource.addEventListener("status", (event) => {
+			try {
+				const payload = JSON.parse(event.data);
+				renderStatus(payload);
+			} catch {
+				// Ignore malformed stream payloads.
+			}
+		});
+
+		statusSource.addEventListener("error", () => {
+			if (statusSource) {
+				statusSource.close();
+				statusSource = null;
+			}
+			startStatusPolling();
+		});
+	} catch {
+		startStatusPolling();
+	}
 };
 
 const setBusy = (isBusy) => {
@@ -106,7 +213,7 @@ formEl.addEventListener("submit", async (event) => {
 
 		if (data.projectId) {
 			activeProjectId = data.projectId;
-			startStatusPolling();
+			startStatusStream();
 		}
 	} catch (error) {
 		appendMessage("assistant", `Request failed: ${error instanceof Error ? error.message : String(error)}`);

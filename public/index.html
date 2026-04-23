@@ -39,14 +39,57 @@
 				width: min(100%, 980px);
 				height: min(92vh, 900px);
 				display: grid;
-				grid-template-rows: auto 1fr auto auto;
+				grid-template-rows: auto 1fr auto;
 				gap: 16px;
+				padding: 0;
+			}
+
+			.hero {
 				padding: 20px;
 				border: 1px solid var(--panel-border);
 				border-radius: 28px;
 				background: var(--panel);
 				backdrop-filter: blur(18px);
 				box-shadow: var(--shadow);
+			}
+
+			.workspace {
+				display: grid;
+				grid-template-columns: 1.45fr 1fr;
+				gap: 14px;
+				min-height: 0;
+			}
+
+			.chat-pane {
+				display: grid;
+				grid-template-rows: 1fr auto;
+				gap: 12px;
+				min-height: 0;
+				padding: 16px;
+				border: 1px solid var(--panel-border);
+				border-radius: 22px;
+				background: var(--panel);
+				backdrop-filter: blur(14px);
+			}
+
+			.status-pane {
+				display: grid;
+				grid-template-rows: auto 1fr;
+				gap: 8px;
+				min-height: 0;
+				padding: 16px;
+				border: 1px solid var(--panel-border);
+				border-radius: 22px;
+				background: var(--panel);
+				backdrop-filter: blur(14px);
+			}
+
+			.pane-title {
+				margin: 0;
+				font-size: 0.9rem;
+				color: #bfdbfe;
+				letter-spacing: 0.02em;
+				text-transform: uppercase;
 			}
 
 			header {
@@ -88,12 +131,12 @@
 			}
 
 			#project-status {
-				max-height: 220px;
+				height: 100%;
 				overflow: auto;
 				padding: 12px;
-				border: 1px solid var(--panel-border);
+				border: 1px dashed rgba(148, 163, 184, 0.3);
 				border-radius: 16px;
-				background: rgba(15, 23, 42, 0.5);
+				background: rgba(15, 23, 42, 0.35);
 			}
 
 			.status-block {
@@ -110,6 +153,28 @@
 				margin: 0 0 6px;
 				font-size: 0.9rem;
 				color: var(--muted);
+			}
+
+			.task-row {
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+				gap: 12px;
+			}
+
+			.task-details {
+				margin: 4px 0 0;
+				font-size: 0.82rem;
+				color: #94a3b8;
+			}
+
+			.task-status {
+				background: rgba(15, 23, 42, 0.9);
+				color: var(--text);
+				border: 1px solid var(--panel-border);
+				border-radius: 10px;
+				padding: 6px 8px;
+				font-size: 0.8rem;
 			}
 
 			.status-block ul {
@@ -188,9 +253,23 @@
 				text-align: center;
 			}
 
+			.footer-hint {
+				padding: 0 8px 6px;
+			}
+
 			@media (max-width: 720px) {
-				.shell { height: 100vh; border-radius: 0; }
+				.shell { height: 100vh; }
+				.hero {
+					border-radius: 0;
+					border-left: 0;
+					border-right: 0;
+				}
 				header { flex-direction: column; }
+				.workspace {
+					grid-template-columns: 1fr;
+					grid-template-rows: 1fr auto;
+				}
+				.status-pane { min-height: 220px; }
 				.composer { grid-template-columns: 1fr; }
 				button { width: 100%; }
 			}
@@ -198,27 +277,37 @@
 	</head>
 	<body>
 		<main class="shell">
-			<header>
-				<div>
-					<h1>Project Copilot</h1>
-					<p class="subtitle">
-						A Cloudflare AI assistant with stateful memory, workflow coordination, and a live chat interface.
-					</p>
-				</div>
-				<div class="badge">Workers AI + Durable Object memory</div>
-			</header>
-
-			<section id="messages" aria-live="polite" aria-label="Chat messages"></section>
-			<section id="project-status" aria-live="polite" aria-label="Project status panel">
-				<p class="hint">Start a workflow with <code>/plan your goal</code> to see live status.</p>
+			<section class="hero">
+				<header>
+					<div>
+						<h1>Project Copilot</h1>
+						<p class="subtitle">
+							A Cloudflare AI assistant with stateful memory, workflow coordination, and a live chat interface.
+						</p>
+					</div>
+					<div class="badge">Workers AI + Durable Object memory</div>
+				</header>
 			</section>
 
-			<form class="composer" id="chat-form">
-				<textarea id="message-input" placeholder="Ask the project copilot something..." rows="2"></textarea>
-				<button id="send-button" type="submit">Send</button>
-			</form>
+			<section class="workspace">
+				<div class="chat-pane">
+					<section id="messages" aria-live="polite" aria-label="Chat messages"></section>
 
-			<p class="hint">Press Enter to send, Shift+Enter for a new line.</p>
+					<form class="composer" id="chat-form">
+						<textarea id="message-input" placeholder="Ask the project copilot something..." rows="2"></textarea>
+						<button id="send-button" type="submit">Send</button>
+					</form>
+				</div>
+
+				<aside class="status-pane">
+					<h2 class="pane-title">Planning Board</h2>
+					<section id="project-status" aria-live="polite" aria-label="Project status panel">
+						<p class="hint">Start a workflow with <code>/plan your goal</code> to see live status.</p>
+					</section>
+				</aside>
+			</section>
+
+			<p class="hint footer-hint">Press Enter to send, Shift+Enter for a new line.</p>
 		</main>
 
 		<script src="/app.js" defer></script>
